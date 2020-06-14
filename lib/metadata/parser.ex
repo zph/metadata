@@ -42,6 +42,7 @@ defmodule Metadata.Parser do
     |> Map.put(:image, do_image(meta, html))
     |> Map.put(:url, do_url(meta))
     |> Map.put(:data, meta)
+    |> ensure_fully_qualified_image_urls()
   end
 
   def do_description(%{"og:description" => description}), do: description
@@ -65,6 +66,23 @@ defmodule Metadata.Parser do
     else
       _ -> nil
     end
+  end
+
+  def ensure_fully_qualified_image_urls(%__MODULE__.Result{image: nil} = result), do: result
+  def ensure_fully_qualified_image_urls(%__MODULE__.Result{url: nil} = result), do: result
+
+  @doc """
+  Guard against sites that use relative links and in that case merge in the fully qualified link
+  """
+  def ensure_fully_qualified_image_urls(%__MODULE__.Result{image: image, url: url} = result) do
+    sanitized_image_url =
+      case URI.parse(image) do
+        %URI{host: nil} = uri -> URI.parse(url) |> Map.merge(uri, fn _k, v1, v2 -> v2 || v1 end)
+        uri -> uri
+      end
+      |> URI.to_string()
+
+    %__MODULE__.Result{result | image: sanitized_image_url}
   end
 
   def do_url(%{"og:url" => value}), do: value
