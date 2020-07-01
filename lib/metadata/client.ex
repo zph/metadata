@@ -6,6 +6,10 @@ defmodule Metadata.Client do
   plug(Tesla.Middleware.FollowRedirects)
   plug(Metadata.Middleware.EncodeRedirectLink)
 
+  plug(Tesla.Middleware.Headers, [
+    {"accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"}
+  ])
+
   plug(Tesla.Middleware.Retry,
     delay: 500,
     max_retries: 3
